@@ -23,18 +23,21 @@
                 (env :twitta-health-user-token)
                 (env :twitta-health-user-secret)))
 
-(def health-tag "#twittahealth")
-(def health-match-tag ["#twittahealth"])
+;prefix used to send heartbeat
+(def health-tag-prefix "#twittahealth")
 
 (defn send-heartbeat []
   (try
     (let [result (tapi/statuses-update :oauth-creds my-creds
-                   :params {:status (str health-tag " " (rand-int Integer/MAX_VALUE))})]
+                   :params {:status (str health-tag-prefix " " (rand-int Integer/MAX_VALUE))})]
       (log/debug "twitter status update result: " result))
     (catch Exception e
-      (log/error "Error creating tweet/status update for: " health-tag)
+      (log/error "Error creating tweet/status update for: " health-tag-prefix)
       (log/error e)
   )))
+
+;tag used to match when listening for heartbeat
+(def health-match-tag ["#twittahealth"])
 
 ;generate auth object - creds for hbc calls
 (def consumer-key (env :twitter-api-key) )
