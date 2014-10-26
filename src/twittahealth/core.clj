@@ -28,9 +28,10 @@
 
 (defn send-heartbeat []
   (try
-    (let [result (tapi/statuses-update :oauth-creds my-creds
-                   :params {:status (str health-tag-prefix " " (rand-int Integer/MAX_VALUE))})]
-      (log/debug "twitter status update result: " result))
+    (let [twitter-status (str health-tag-prefix " " (rand-int Integer/MAX_VALUE))
+          result (tapi/statuses-update :oauth-creds my-creds
+                   :params {:status twitter-status})]
+      (log/info "Sent heartbeat: " twitter-status))
     (catch Exception e
       (log/error "Error creating tweet/status update for: " health-tag-prefix)
       (log/error e)
@@ -75,6 +76,6 @@
     (log/info "Listening for heartbeat tweets...")
     (loop []
       (let [data (json/read-str (. queue take) :key-fn clojure.core/keyword)]
-        (println data)
-            (recur)))
+        (log/info "Received heartbeat: " (:text data)))
+        (recur))
     (println "done listening"))
