@@ -7,6 +7,10 @@
             [clojure.core.async :as async]
             [environ.core :refer [env]]
             [clojure.tools.logging :as log]
+            [clj-time.core :as time]
+            [clj-time.format :as timef]
+            [clj-time.local :as loc]
+            [clj-time.coerce :as c]
             )
   (:import
     (com.twitter.hbc ClientBuilder)
@@ -30,8 +34,10 @@
   (try
     (let [twitter-status (str health-tag-prefix " " (rand-int Integer/MAX_VALUE))
           result (tapi/statuses-update :oauth-creds my-creds
-                   :params {:status twitter-status})]
-      (log/info "Sent heartbeat: " twitter-status))
+                   :params {:status twitter-status})
+          local-time (timef/unparse (timef/with-zone (:date-time-no-ms timef/formatters)
+                           (time/time-zone-for-id "America/Chicago"))(time/now))]
+      (log/info "<" local-time "> Sent heartbeat:" twitter-status))
     (catch Exception e
       (log/error "Error creating tweet/status update for: " health-tag-prefix)
       (log/error e)
@@ -75,7 +81,9 @@
     ;inifinite loop, take message off queue each iteration and process it
     (log/info "Listening for heartbeat tweets...")
     (loop []
-      (let [data (json/read-str (. queue take) :key-fn clojure.core/keyword)]
-        (log/info "Received heartbeat: " (:text data)))
+      (let [data (json/read-str (. queue take) :key-fn clojure.core/keyword)
+            local-time (timef/unparse (timef/with-zone (:date-time-no-ms timef/formatters)
+                                        (time/time-zone-for-id "America/Chicago"))(time/now))]
+        (log/info "<" local-time "> Received heartbeat:" (:text data)))
         (recur))
     (println "done listening"))
